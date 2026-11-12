@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar — login de vidro com partículas (exemplo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===== TOKENS (troque pelas cores do projeto) ===== */
+:root{
+  --bg:#07080B; --accent:#3BA3FF; --accent-hi:#9BD0FF; --good:#2FD08A; --crit:#FF5D5D;
+  --ink:#F1F4F8; --ink-2:rgba(241,244,248,.68); --ink-3:rgba(241,244,248,.42);
+  --glass:rgba(255,255,255,.07); --glass-2:rgba(255,255,255,.12); --edge:rgba(255,255,255,.14);
+  --ease:cubic-bezier(.22,1,.36,1);
+  --display:"Space Grotesk",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif;
+  --brand:"NEXO";               /* texto que as partículas formam (troque pelo nome do sistema) */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:400 14px/1.45 var(--body);overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+.demo{position:fixed;left:12px;bottom:12px;z-index:30;font:600 10.5px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;background:#FFB020;color:#1a1200;padding:6px 9px;border-radius:99px}
+
+/* ===== CENA: textura geométrica escura + partículas ===== */
+.scene{position:fixed;inset:0;z-index:0}
+.facets{position:absolute;inset:0;opacity:.55}
+.facets polygon{stroke:rgba(255,255,255,.035);stroke-width:1}
+#particles{position:absolute;inset:0;width:100%;height:100%}
+.vignette{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 45%,transparent 40%,rgba(0,0,0,.75))}
+.skip{position:fixed;right:16px;top:14px;z-index:30;background:none;border:1px solid var(--edge);border-radius:99px;padding:7px 12px;color:var(--ink-2);cursor:pointer;font-size:12px;transition:opacity .4s}
+.skip.gone{opacity:0;pointer-events:none}
+
+/* ===== CARTÃO DE LOGIN COM PAINEL DESLIZANTE ===== */
+.wrap{position:relative;z-index:10;height:100%;display:grid;place-items:center;padding:20px}
+.auth{position:relative;width:min(900px,100%);height:540px;border-radius:26px;overflow:hidden;
+  background:var(--glass);border:1px solid var(--edge);backdrop-filter:blur(26px) saturate(150%);-webkit-backdrop-filter:blur(26px) saturate(150%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 50px 120px -40px rgba(0,0,0,.9);
+  opacity:0;transform:translateY(40px) scale(.96);filter:blur(14px)}
+.auth.in{animation:cardIn 1.1s var(--ease) forwards}
+@keyframes cardIn{to{opacity:1;transform:none;filter:none}}
+.form{position:absolute;top:0;width:50%;height:100%;padding:56px 54px;display:flex;flex-direction:column;justify-content:center;transition:opacity .5s var(--ease),transform .7s var(--ease)}
+.form.login{left:0}.form.signup{left:50%}
+.form h2{font:700 30px/1.1 var(--display);letter-spacing:-.02em;margin-bottom:6px}
+.form p.sub{color:var(--ink-2);margin-bottom:26px}
+.field{position:relative;margin-bottom:18px}
+.field input{width:100%;background:none;border:0;border-bottom:1px solid var(--edge);padding:12px 4px 10px 30px;outline:0;transition:border-color .3s}
+.field svg{position:absolute;left:2px;top:13px;width:17px;height:17px;stroke:var(--ink-3);fill:none;stroke-width:1.8;transition:stroke .3s}
+.field label{position:absolute;left:30px;top:12px;color:var(--ink-3);pointer-events:none;transition:transform .35s var(--ease),color .3s,font-size .35s}
+.field input:focus,.field input:not(:placeholder-shown){border-color:var(--accent)}
+.field input:focus~svg{stroke:var(--accent-hi)}
+.field input:focus~label,.field input:not(:placeholder-shown)~label{transform:translateY(-20px);font-size:11px;color:var(--accent-hi)}
+.field::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent);transform:scaleX(0);transform-origin:0 50%;transition:transform .5s var(--ease)}
+.field:focus-within::after{transform:scaleX(1)}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--ink-2);margin:4px 0 22px}
+.row a{color:var(--accent-hi);text-decoration:none}
+.btn{position:relative;overflow:hidden;border:0;border-radius:14px;padding:14px;font-weight:600;cursor:pointer;background:var(--accent);color:#04121F;transition:transform .2s,box-shadow .4s}
+.btn:hover{box-shadow:0 14px 34px -10px var(--accent)}.btn:active{transform:scale(.97)}
+.btn .orbs{display:none;gap:4px;justify-content:center}.btn.loading .orbs{display:flex}.btn.loading .t{display:none}
+.btn .orbs i{width:6px;height:6px;border-radius:50%;background:#04121F;animation:o .9s ease-in-out infinite;animation-delay:calc(var(--i)*.12s)}
+@keyframes o{50%{transform:translateY(-5px);opacity:.4}}
+.alt{font-size:12.5px;color:var(--ink-2);text-align:center;margin-top:18px}
+.alt button{background:none;border:0;color:var(--accent-hi);cursor:pointer;font-weight:600}
+.err{color:var(--crit);font-size:12px;height:16px;margin:-8px 0 8px}
+.shake{animation:shake .45s}@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+
+/* painel que desliza */
+.panel{position:absolute;top:0;left:50%;width:50%;height:100%;z-index:5;padding:56px 50px;display:flex;flex-direction:column;justify-content:center;
+  background:linear-gradient(150deg,rgba(255,255,255,.16),rgba(255,255,255,.04));border-left:1px solid var(--edge);
+  backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);transition:left .85s var(--ease),border-radius .85s var(--ease)}
+.panel::before{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 30% 20%,color-mix(in oklab,var(--accent) 35%,transparent),transparent 70%);opacity:.7;pointer-events:none}
+.panel .msg{position:absolute;inset:56px 50px;display:flex;flex-direction:column;justify-content:center;transition:opacity .45s var(--ease),transform .7s var(--ease)}
+.panel h3{font:700 clamp(30px,3.6vw,44px)/.98 var(--display);text-transform:uppercase;letter-spacing:-.02em}
+.panel p{color:var(--ink-2);margin:14px 0 22px;max-width:280px}
+.ghost{align-self:flex-start;background:none;border:1px solid rgba(255,255,255,.45);border-radius:99px;padding:10px 18px;cursor:pointer;font-weight:600;transition:background .3s,transform .2s}
+.ghost:hover{background:rgba(255,255,255,.1)}.ghost:active{transform:scale(.95)}
+.auth.signup-mode .panel{left:0;border-left:0;border-right:1px solid var(--edge)}
+.panel .m-login{opacity:1}.panel .m-signup{opacity:0;transform:translateX(40px);pointer-events:none}
+.auth.signup-mode .panel .m-login{opacity:0;transform:translateX(-40px);pointer-events:none}
+.auth.signup-mode .panel .m-signup{opacity:1;transform:none;pointer-events:auto}
+.form.signup{opacity:0;transform:translateX(-40px);pointer-events:none}
+.auth.signup-mode .form.signup{opacity:1;transform:none;pointer-events:auto}
+.auth.signup-mode .form.login{opacity:0;transform:translateX(40px);pointer-events:none}
+.stag>*{opacity:0;transform:translateY(16px)}
+.auth.in .stag>*{animation:up .8s var(--ease) forwards;animation-delay:calc(.45s + var(--i)*70ms)}
+@keyframes up{to{opacity:1;transform:none}}
+
+/* sucesso */
+.done{position:absolute;inset:0;z-index:8;display:grid;place-items:center;text-align:center;opacity:0;pointer-events:none;transition:opacity .5s}
+.auth.ok .done{opacity:1;pointer-events:auto}.auth.ok .form,.auth.ok .panel{opacity:0!important;pointer-events:none!important;transition:opacity .4s}
+.check{width:84px;height:84px;margin:0 auto 18px;border-radius:24px;display:grid;place-items:center;background:rgba(47,208,138,.15);box-shadow:0 0 60px rgba(47,208,138,.45)}
+.check path{fill:none;stroke:var(--good);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40}
+.auth.ok .check path{animation:dr .7s .25s var(--ease) forwards}@keyframes dr{to{stroke-dashoffset:0}}
+.done h2{font:700 26px var(--display)}.done p{color:var(--ink-2)}
+
+
+/* ===== VERIFICAÇÃO EM DUAS ETAPAS ===== */
+.form.otp{left:0;opacity:0;transform:translateX(-40px);pointer-events:none}
+.auth.otp-mode .form.login,.auth.otp-mode .form.signup{opacity:0!important;transform:translateX(40px)!important;pointer-events:none!important}
+.auth.otp-mode .form.otp{opacity:1;transform:none;pointer-events:auto}
+.auth.otp-mode .panel .m-login,.auth.otp-mode .panel .m-signup{opacity:0;transform:translateY(-20px);pointer-events:none}
+.panel .m-otp{opacity:0;transform:translateY(20px);pointer-events:none}
+.auth.otp-mode .panel .m-otp{opacity:1;transform:none;pointer-events:auto}
+.codes{display:flex;gap:10px;margin:6px 0 10px}
+.codes input{width:100%;max-width:54px;aspect-ratio:.82;text-align:center;font:600 24px var(--display);background:rgba(255,255,255,.05);border:1px solid var(--edge);border-radius:14px;outline:0;caret-color:var(--accent);
+  transition:border-color .25s,transform .25s var(--ease),background .25s,box-shadow .25s}
+.codes input:focus{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in oklab,var(--accent) 22%,transparent);transform:translateY(-2px)}
+.codes input.filled{background:rgba(255,255,255,.1)}
+.codes.bad input{border-color:var(--crit)}
+.codes.merge input{animation:merge .45s var(--ease) forwards;animation-delay:calc(var(--i)*40ms)}
+@keyframes merge{to{transform:translateX(var(--to)) scale(.6);opacity:0}}
+.otp-check{position:absolute;left:50%;top:var(--cy,50%);width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:18px;background:rgba(47,208,138,.14);border:2px solid var(--good);display:grid;place-items:center;
+  opacity:0;transform:scale(.4);box-shadow:0 0 50px rgba(47,208,138,.5);pointer-events:none}
+.otp-check.on{animation:pop .6s cubic-bezier(.34,1.56,.64,1) forwards}@keyframes pop{to{opacity:1;transform:none}}
+.otp-check path{fill:none;stroke:var(--good);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40}
+.otp-check.on path{animation:dr .5s .3s var(--ease) forwards}
+.resend{font-size:12.5px;color:var(--ink-2);margin-top:10px}.resend button{background:none;border:0;color:var(--accent-hi);cursor:pointer;font-weight:600}.resend button:disabled{color:var(--ink-3);cursor:default}
+.method{display:flex;gap:8px;margin-bottom:14px}.method button{flex:1;padding:9px;border-radius:12px;border:1px solid var(--edge);background:none;cursor:pointer;color:var(--ink-2);font-size:12.5px;transition:.25s}
+.method button[aria-pressed=true]{border-color:var(--accent);color:var(--ink);background:rgba(255,255,255,.06)}
+
+/* ===== ENTRADA NO SITE (depois do login) ===== */
+.boot{position:fixed;inset:0;z-index:40;display:grid;place-items:center;pointer-events:none}
+.boot .ring{position:relative;width:min(56vmin,420px);aspect-ratio:1;opacity:0;transition:opacity .6s}
+.boot.on .ring{opacity:1}
+.boot svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.boot .trk{fill:none;stroke:rgba(255,255,255,.08);stroke-width:2}
+.boot .prog{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;filter:drop-shadow(0 0 8px var(--accent))}
+.boot .info{position:absolute;left:50%;bottom:-74px;translate:-50% 0;text-align:center;width:320px}
+.boot .pct{font:700 15px var(--display);letter-spacing:.08em}
+.boot .step{font-size:12.5px;color:var(--ink-2);margin-top:6px;display:flex;gap:8px;justify-content:center;align-items:center;min-height:18px}
+.boot .step .orbs{display:flex;gap:4px}.boot .step .orbs i{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:o .9s ease-in-out infinite;animation-delay:calc(var(--i)*.12s)}
+.auth.leave{animation:leave .9s var(--ease) forwards}
+@keyframes leave{to{opacity:0;transform:scale(.88) translateY(20px);filter:blur(16px)}}
+.portal{position:fixed;inset:0;z-index:60;background:var(--accent);clip-path:circle(0% at 50% 50%);pointer-events:none}
+.portal.go{animation:portal .9s cubic-bezier(.7,0,.2,1) forwards}
+@keyframes portal{to{clip-path:circle(150% at 50% 50%)}}
+
+/* celular: painel vira topo */
+@media (max-width:760px){
+  body{overflow:auto}
+  .auth{height:auto;min-height:600px;display:flex;flex-direction:column}
+  .panel{order:-1;position:relative;left:0!important;width:100%;height:150px;flex:none;padding:24px;border:0;border-bottom:1px solid var(--edge)}
+  .form{position:relative;width:100%;height:auto;left:0!important;padding:26px 24px 30px;justify-content:flex-start}
+  .form.signup,.form.otp{position:absolute;top:150px;bottom:0;left:0}
+  .codes{gap:6px}.codes input{font-size:20px;border-radius:11px}
+  .panel .msg{inset:22px 24px}.panel h3{font-size:26px}.panel p{display:none}.panel .ghost{margin-top:10px}
+  .auth.signup-mode .panel{border-right:0}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.auth,.stag>*{opacity:1!important;transform:none!important;filter:none!important}}
+</style>
+</head>
+<body>
+<div class="demo">Exemplo · dados fictícios</div>
+<!-- LOGO DO SISTEMA: as partículas montam esta imagem com as cores dela.
+     Troque por <img id="brand-logo" src="logo.svg"> (ou .png com fundo transparente) servido pelo mesmo site.
+     Sem logo, as partículas formam o texto de --brand. -->
+<svg id="brand-logo" viewBox="0 0 120 120" width="120" height="120" style="display:none" aria-hidden="true">
+  <circle cx="60" cy="60" r="52" fill="none" stroke="#3BA3FF" stroke-width="14"/>
+  <path d="M38 84V36l44 48V36" fill="none" stroke="#F1F4F8" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+<div class="scene" aria-hidden="true">
+  <svg class="facets" id="facets" preserveAspectRatio="none"></svg>
+  <canvas id="particles"></canvas>
+  <div class="vignette"></div>
+</div>
+<button class="skip" id="skip">Pular animação</button>
+
+<div class="boot" id="boot" aria-live="polite"><div class="ring"><svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="48"/><circle class="prog" id="prog" cx="50" cy="50" r="48" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg><div class="info"><div class="pct" id="pct">0%</div><div class="step"><span class="orbs"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i></span><span id="stepTxt">Validando sessão</span></div></div></div></div>
+<div class="portal" id="portal"></div>
+<div class="wrap">
+  <div class="auth" id="auth">
+    <!-- ENTRAR -->
+    <form class="form login stag" id="f-login" novalidate>
+      <h2 style="--i:0">Entrar</h2><p class="sub" style="--i:1">Use seu e-mail e senha de acesso.</p>
+      <div class="field" style="--i:2"><input id="le" type="email" placeholder=" " autocomplete="username" required><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><label for="le">E-mail</label></div>
+      <div class="field" style="--i:3"><input id="lp" type="password" placeholder=" " autocomplete="current-password" required><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><label for="lp">Senha</label></div>
+      <div class="err" id="lerr" role="alert"></div>
+      <div class="row" style="--i:4"><label><input type="checkbox" checked> Manter conectado</label><a href="#">Esqueci a senha</a></div>
+      <button class="btn" style="--i:5"><span class="t">Entrar</span><span class="orbs"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i></span></button>
+    </form>
+    <!-- CRIAR CONTA -->
+    <form class="form signup" id="f-signup" novalidate>
+      <h2>Criar conta</h2><p class="sub">Leva menos de um minuto.</p>
+      <div class="field"><input id="sn" placeholder=" " autocomplete="name" required><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><label for="sn">Nome completo</label></div>
+      <div class="field"><input id="se" type="email" placeholder=" " autocomplete="email" required><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><label for="se">E-mail</label></div>
+      <div class="field"><input id="sp" type="password" placeholder=" " autocomplete="new-password" required><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><label for="sp">Criar senha</label></div>
+      <div class="err" id="serr" role="alert"></div>
+      <button class="btn"><span class="t">Cadastrar</span><span class="orbs"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i></span></button>
+    </form>
+    <!-- VERIFICAÇÃO EM DUAS ETAPAS (liga/desliga em CONFIG.doisFatores) -->
+    <form class="form otp" id="f-otp" novalidate autocomplete="one-time-code">
+      <h2>Digite o código</h2><p class="sub" id="otp-sub">Enviamos um código de 6 dígitos para o seu celular terminado em ••42.</p>
+      <div class="method" role="group" aria-label="Como receber"><button type="button" aria-pressed="true" data-m="sms">SMS</button><button type="button" aria-pressed="false" data-m="app">App autenticador</button><button type="button" aria-pressed="false" data-m="mail">E-mail</button></div>
+      <div class="codes" id="codes" aria-label="Código de verificação"></div>
+      <div class="err" id="oerr" role="alert"></div>
+      <div class="resend">Não recebeu? <button type="button" id="resend" disabled>Reenviar em <span id="cd">30</span>s</button></div>
+      <div class="otp-check" id="otpCheck"><svg width="34" height="34" viewBox="0 0 44 44"><path d="M12 23l7 7 14-15"/></svg></div>
+    </form>
+    <!-- PAINEL DE VIDRO QUE DESLIZA -->
+    <div class="panel">
+      <div class="msg m-login"><h3>Olá,<br>novo por aqui?</h3><p>Crie sua conta e acompanhe tudo em um só lugar.</p><button class="ghost" data-go="signup" type="button">Criar conta →</button></div>
+      <div class="msg m-otp"><h3>Só mais<br>um passo</h3><p>A verificação em duas etapas protege sua conta mesmo se alguém souber sua senha.</p></div>
+      <div class="msg m-signup"><h3>Bem-vindo<br>de volta!</h3><p>Já tem conta? Entre com seu e-mail.</p><button class="ghost" data-go="login" type="button">← Entrar</button></div>
+    </div>
+    <div class="done"><div><div class="check"><svg width="44" height="44" viewBox="0 0 44 44"><path d="M12 23l7 7 14-15"/></svg></div><h2>Tudo certo!</h2><p>Abrindo o painel…</p></div></div>
+  </div>
+</div>
+
+<script>
+(()=>{
+/* ===== CONFIGURAÇÃO (troque por projeto) ===== */
+const CONFIG={
+  doisFatores:true,                       // false = pula a etapa do código
+  digitos:6,                              // 4 ou 6
+  destino:'05-painel-instrumental.html',  // página que abre depois do login
+  etapas:['Validando sessão','Carregando permissões','Sincronizando dados','Montando o painel'],
+};
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const auth=document.getElementById('auth'), skip=document.getElementById('skip');
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim().replace(/"/g,'');
+
+/* ---------- textura geométrica (triângulos) ---------- */
+(function facets(){const s=document.getElementById('facets'),W=innerWidth,H=innerHeight;s.setAttribute('viewBox',`0 0 ${W} ${H}`);let g='';const st=110;
+  for(let y=-st;y<H+st;y+=st)for(let x=-st;x<W+st;x+=st){const j=()=>(Math.random()-.5)*st*.5,a=[x+j(),y+j()],b=[x+st+j(),y+j()],c=[x+j(),y+st+j()],d=[x+st+j(),y+st+j()],l1=8+Math.random()*10,l2=8+Math.random()*10;
+  g+=`<polygon points="${a} ${b} ${c}" fill="hsl(220 12% ${l1}%)"/><polygon points="${b} ${d} ${c}" fill="hsl(220 12% ${l2}%)"/>`}s.innerHTML=g})();
+
+/* ---------- PARTÍCULAS: esfera → nome do sistema → explodem e viram fundo ---------- */
+const cv=document.getElementById('particles'),ctx=cv.getContext('2d');
+let W,H,DPR,P=[],phase='sphere',t0=performance.now(),mouse={x:-9e3,y:-9e3},finished=false;
+const N=innerWidth<760?900:1800;
+function size(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
+size();
+function sample(c,w,h,step){const d=c.getImageData(0,0,w,h).data,pts=[];for(let y=0;y<h;y+=step)for(let x=0;x<w;x+=step){const k=(y*w+x)*4;if(d[k+3]>128)pts.push([x,y,`rgb(${d[k]},${d[k+1]},${d[k+2]})`])}return pts.sort(()=>Math.random()-.5)}
+function textTargets(txt){const o=document.createElement('canvas'),c=o.getContext('2d'),fs=Math.min(W*.22,240);o.width=W;o.height=H;
+  c.font=`700 ${fs}px "Space Grotesk", system-ui, sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillStyle='#fff';c.fillText(txt,W/2,H/2);
+  return sample(c,W,H,Math.max(3,Math.round(fs/38))).map(p=>[p[0],p[1],null])}
+/* carrega a logo (img ou svg inline) e devolve pontos com a cor de cada pixel */
+let logoPts=null;
+function loadLogo(){return new Promise(res=>{const el=document.getElementById('brand-logo');if(!el)return res(null);
+  const img=new Image();img.crossOrigin='anonymous';
+  img.onload=()=>{try{const box=Math.min(W*.5,H*.5,420),r=(img.naturalWidth||1)/(img.naturalHeight||1),w=Math.round(r>=1?box:box*r),h=Math.round(r>=1?box/r:box);
+      const o=document.createElement('canvas');o.width=W;o.height=H;const c=o.getContext('2d');c.drawImage(img,(W-w)/2,(H-h)/2,w,h);
+      const step=Math.max(3,Math.round(Math.sqrt(w*h/N)*.9));res(sample(c,W,H,step))}catch(e){res(null)}};  /* canvas "contaminado" (arquivo local/outro domínio) → usa o texto */
+  img.onerror=()=>res(null);
+  img.src=el.tagName.toLowerCase()==='img'?el.src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(el))})}
+loadLogo().then(p=>{logoPts=p&&p.length>50?p:null});
+function sphere(i){const k=i/N,phi=Math.acos(1-2*k),th=Math.PI*(1+Math.sqrt(5))*i,R=Math.min(W,H)*.22;return[Math.sin(phi)*Math.cos(th)*R,Math.sin(phi)*Math.sin(th)*R,Math.cos(phi)*R]}
+for(let i=0;i<N;i++){const s=sphere(i);P.push({x:Math.random()*W,y:Math.random()*H,vx:0,vy:0,sx:s[0],sy:s[1],sz:s[2],tx:0,ty:0,r:Math.random()*1.3+.5,a:Math.random()*.6+.4})}
+let targets=[];
+function toText(){phase='text';targets=logoPts||textTargets(css('--brand')||'NEXO');P.forEach((p,i)=>{const t=targets[i%targets.length];p.tx=t[0];p.ty=t[1];p.col=t[2]})}
+function burst(){phase='burst';P.forEach(p=>{const a=Math.atan2(p.y-H/2,p.x-W/2),f=4+Math.random()*9;p.vx=Math.cos(a)*f;p.vy=Math.sin(a)*f});setTimeout(()=>{phase='ambient';finished=true},700);
+  if(!auth.classList.contains('in'))auth.classList.add('in');skip.classList.add('gone')}
+function frame(now){
+  const t=(now-t0)/1000;ctx.clearRect(0,0,W,H);const ac=css('--accent');
+  if(phase==='sphere'){const rot=t*.9;P.forEach(p=>{const x=p.sx*Math.cos(rot)-p.sz*Math.sin(rot),z=p.sx*Math.sin(rot)+p.sz*Math.cos(rot),tx=W/2+x,ty=H/2+p.sy,e=Math.min(1,t/1.4);p.x+=(tx-p.x)*(.04+e*.08);p.y+=(ty-p.y)*(.04+e*.08);p.depth=(z/(Math.min(W,H)*.22)+1)/2})}
+  else if(phase==='text'){P.forEach(p=>{p.x+=(p.tx-p.x)*.085;p.y+=(p.ty-p.y)*.085;p.depth=1})}
+  else{P.forEach(p=>{p.vx*=.96;p.vy*=.96;p.vx+=Math.sin(p.y*.01+t)*.012;p.vy+=Math.cos(p.x*.01+t)*.012-.004;
+      const dx=p.x-mouse.x,dy=p.y-mouse.y,d2=dx*dx+dy*dy;if(d2<14000){const f=(14000-d2)/14000*.9;p.vx+=dx/Math.sqrt(d2+1)*f;p.vy+=dy/Math.sqrt(d2+1)*f}
+      p.x+=p.vx;p.y+=p.vy;if(p.x<-10)p.x=W+10;if(p.x>W+10)p.x=-10;if(p.y<-10)p.y=H+10;if(p.y>H+10)p.y=-10;p.depth=.45})}
+  P.forEach((p,i)=>{const al=p.a*(phase==='ambient'?.45:.35+.65*(p.depth??1));ctx.fillStyle=(phase==='text'&&p.col)?p.col:(i%9===0?ac:'#fff');ctx.globalAlpha=al;ctx.beginPath();ctx.arc(p.x,p.y,p.r*(phase==='ambient'?.9:1),0,6.283);ctx.fill()});
+  ctx.globalAlpha=1;requestAnimationFrame(frame)}
+if(reduced){phase='ambient';P.forEach(p=>{p.x=Math.random()*W;p.y=Math.random()*H});auth.classList.add('in');skip.classList.add('gone')}
+requestAnimationFrame(frame);
+const timers=reduced?[]:[setTimeout(toText,1900),setTimeout(burst,3700)];
+skip.addEventListener('click',()=>{timers.forEach(clearTimeout);if(phase!=='ambient'&&phase!=='burst')burst()});
+addEventListener('pointermove',e=>{mouse.x=e.clientX;mouse.y=e.clientY});
+addEventListener('resize',()=>{size();loadLogo().then(p=>{logoPts=p&&p.length>50?p:null;if(phase==='text')toText()})});
+
+/* ---------- troca Entrar ↔ Criar conta (painel desliza) ---------- */
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>auth.classList.toggle('signup-mode',b.dataset.go==='signup')));
+
+/* ---------- envio (simulado) ---------- */
+function submit(form,errEl,fields){form.addEventListener('submit',e=>{e.preventDefault();const bad=fields.find(id=>{const i=document.getElementById(id);return !i.value||(i.type==='email'&&!/^\S+@\S+\.\S+$/.test(i.value))});
+  if(bad){errEl.textContent='Confira os campos destacados.';form.classList.remove('shake');void form.offsetWidth;form.classList.add('shake');document.getElementById(bad).focus();return}
+  errEl.textContent='';const btn=form.querySelector('.btn');btn.classList.add('loading');setTimeout(()=>{btn.classList.remove('loading');CONFIG.doisFatores?openOtp():success()},1100)})}
+submit(document.getElementById('f-login'),document.getElementById('lerr'),['le','lp']);
+submit(document.getElementById('f-signup'),document.getElementById('serr'),['sn','se','sp']);
+
+/* ---------- VERIFICAÇÃO EM DUAS ETAPAS ---------- */
+const codes=document.getElementById('codes'),oerr=document.getElementById('oerr');
+codes.innerHTML=[...Array(CONFIG.digitos)].map((_,i)=>`<input inputmode="numeric" maxlength="1" aria-label="Dígito ${i+1}" style="--i:${i}">`).join('');
+document.getElementById('otp-sub').textContent=`Enviamos um código de ${CONFIG.digitos} dígitos para o seu celular terminado em ••42.`;
+const boxes=[...codes.children];let timer;
+function openOtp(){auth.classList.remove('signup-mode');auth.classList.add('otp-mode');setTimeout(()=>boxes[0].focus(),500);countdown()}
+function countdown(){const b=document.getElementById('resend');let n=30;b.disabled=true;b.innerHTML='Reenviar em <span id="cd">30</span>s';clearInterval(timer);
+  timer=setInterval(()=>{n--;if(n<=0){clearInterval(timer);b.disabled=false;b.textContent='Reenviar código'}else document.getElementById('cd').textContent=n},1000)}
+document.getElementById('resend').onclick=countdown;
+document.querySelectorAll('.method button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.method button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  document.getElementById('otp-sub').textContent={sms:`Enviamos um código de ${CONFIG.digitos} dígitos para o seu celular terminado em ••42.`,app:'Abra seu app autenticador e digite o código que aparece agora.',mail:`Enviamos um código de ${CONFIG.digitos} dígitos para a••@exemplo.com.`}[b.dataset.m];boxes[0].focus()});
+boxes.forEach((inp,i)=>{
+  inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.toggle('filled',!!inp.value);codes.classList.remove('bad');oerr.textContent='';if(inp.value&&boxes[i+1])boxes[i+1].focus();check()});
+  inp.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!inp.value&&boxes[i-1]){boxes[i-1].focus();boxes[i-1].value='';boxes[i-1].classList.remove('filled')}
+    if(e.key==='ArrowLeft'&&boxes[i-1])boxes[i-1].focus();if(e.key==='ArrowRight'&&boxes[i+1])boxes[i+1].focus()});
+  inp.addEventListener('paste',e=>{const t=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,CONFIG.digitos);if(!t)return;e.preventDefault();
+    t.split('').forEach((c,k)=>{boxes[k].value=c;boxes[k].classList.add('filled')});boxes[Math.min(t.length,CONFIG.digitos-1)].focus();check()})});
+function check(){const code=boxes.map(b=>b.value).join('');if(code.length<CONFIG.digitos)return;
+  /* DEMONSTRAÇÃO: qualquer código vale, menos 000000. No sistema real, valide no servidor. */
+  if(/^0+$/.test(code)){codes.classList.add('bad');oerr.textContent='Código incorreto. Tente de novo.';codes.classList.remove('shake');void codes.offsetWidth;codes.classList.add('shake');
+    setTimeout(()=>{codes.classList.remove('bad','shake');boxes.forEach(b=>{b.value='';b.classList.remove('filled')});boxes[0].focus()},600);return}
+  boxes.forEach(b=>b.blur());const r=codes.getBoundingClientRect(),cx=r.left+r.width/2,f=document.getElementById('f-otp').getBoundingClientRect();
+  boxes.forEach(b=>{const br=b.getBoundingClientRect();b.style.setProperty('--to',(cx-(br.left+br.width/2))+'px')});
+  const ck=document.getElementById('otpCheck');ck.style.setProperty('--cy',(r.top+r.height/2-f.top)+'px');ck.style.left=(cx-f.left)+'px';
+  codes.classList.add('merge');setTimeout(()=>ck.classList.add('on'),380);setTimeout(success,1300)}
+
+/* ---------- SUCESSO → ANIMAÇÃO DE ENTRADA NO SITE ---------- */
+function success(){auth.classList.add('ok');setTimeout(boot,900)}
+function boot(){
+  if(reduced){location.href=CONFIG.destino;return}
+  auth.classList.add('leave');
+  /* as partículas voltam a formar a logo no centro e giram em volta do anel de carregamento */
+  setTimeout(()=>{toText();document.getElementById('boot').classList.add('on')},350);
+  const prog=document.getElementById('prog'),pct=document.getElementById('pct'),stepTxt=document.getElementById('stepTxt'),t0=performance.now(),DUR=2600;
+  (function run(t){const p=Math.min(1,(t-t0-500)/DUR),e=p<0?0:1-(1-p)**2.2;prog.style.strokeDashoffset=100-e*100;pct.textContent=Math.round(e*100)+'%';
+    stepTxt.textContent=CONFIG.etapas[Math.min(CONFIG.etapas.length-1,Math.floor(e*CONFIG.etapas.length))];
+    if(p<1)requestAnimationFrame(run);else finish()})(t0)}
+function finish(){document.getElementById('stepTxt').textContent='Pronto';burst();
+  try{sessionStorage.setItem('entrada','portal')}catch(e){}
+  const pt=document.getElementById('portal');setTimeout(()=>pt.classList.add('go'),250);setTimeout(()=>{location.href=CONFIG.destino},1150)}
+})();
+</script>
+</body>
+</html>

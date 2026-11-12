@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NÔMADE — bicicletas elétricas (exemplo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS (troque aqui as cores do projeto) ============ */
+:root{
+  --bg-light:#F2F1EC; --bg-dark:#14160F; --bg-mid:#7D8073;
+  --ink-dark:#14160F; --ink-light:#F2F1EC; --ink-2:rgba(20,22,15,.62);
+  --accent:#C8F902; --accent-ink:#14160F;
+  --line:rgba(20,22,15,.14);
+  --ease:cubic-bezier(.22,1,.36,1);
+  --sans:"Archivo",system-ui,sans-serif; --serif:"Instrument Serif",Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg-light)}
+body{font-family:var(--sans);color:var(--ink-dark);background:var(--bg-light);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+html.lenis,html.lenis body{height:auto}.lenis.lenis-smooth{scroll-behavior:auto!important}
+a{color:inherit;text-decoration:none}
+img,svg{display:block}
+.serif{font-family:var(--serif);font-weight:400;text-transform:none;font-style:italic;letter-spacing:-.01em}
+.demo-tag{position:fixed;left:14px;bottom:12px;z-index:60;font:500 11px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:var(--accent-ink);padding:7px 10px;border-radius:99px}
+
+/* ============ PRELOADER ============ */
+.loader{position:fixed;inset:0;z-index:100;background:var(--bg-dark);color:var(--ink-light);display:grid;place-items:center;clip-path:inset(0 0 0 0)}
+.loader .num{font:900 clamp(80px,18vw,240px)/.8 var(--sans);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.loader .brand{position:absolute;left:24px;top:22px;font-weight:800;letter-spacing:.02em}
+.loader .bar{position:absolute;left:24px;right:24px;bottom:24px;height:2px;background:rgba(255,255,255,.12)}
+.loader .bar i{display:block;height:100%;width:100%;background:var(--accent);transform-origin:0 50%;transform:scaleX(0)}
+.no-js .loader,.reduced .loader{display:none}
+
+/* ============ NAV ============ */
+.nav{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;justify-content:space-between;align-items:center;padding:18px 24px;mix-blend-mode:difference;color:#fff;pointer-events:none}
+.nav>*{pointer-events:auto}
+.logo{font-weight:900;font-size:18px;letter-spacing:-.02em;line-height:.9}
+.cta-fixed{position:fixed;right:24px;top:16px;z-index:55;background:var(--accent);color:var(--accent-ink);font:800 12px/1 var(--sans);padding:11px 14px;border-radius:8px;text-transform:uppercase;letter-spacing:.04em}
+.progress{position:fixed;left:0;top:0;height:3px;width:100%;background:var(--accent);transform-origin:0 50%;transform:scaleX(0);z-index:70}
+
+/* ============ CURSOR ============ */
+.cursor{position:fixed;left:0;top:0;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--accent);z-index:90;pointer-events:none;display:grid;place-items:center;font:800 10px/1 var(--sans);color:var(--accent-ink);text-transform:uppercase;transition:width .35s var(--ease),height .35s var(--ease),margin .35s var(--ease)}
+.cursor.big{width:74px;height:74px;margin:-37px 0 0 -37px}
+.cursor span{opacity:0;transition:opacity .2s}.cursor.big span{opacity:1}
+@media (hover:none),(pointer:coarse){.cursor{display:none}}
+
+/* ============ HERO + revelação no cursor ============ */
+.hero{position:relative;height:100vh;min-height:620px;overflow:hidden;background:var(--bg-light)}
+.topo{position:absolute;inset:-10%;width:120%;height:120%;opacity:.55}
+.topo path{fill:none;stroke:var(--line);stroke-width:1.2}
+.hero-art{position:absolute;inset:0;display:grid;place-items:center}
+.hero-art svg{width:min(78vh,86vw);height:auto}
+.layer-reveal{position:absolute;inset:0;display:grid;place-items:center;background:var(--bg-dark);
+  -webkit-mask-image:radial-gradient(circle var(--r,0px) at var(--x,50%) var(--y,50%),#000 calc(100% - 28px),transparent 100%);
+          mask-image:radial-gradient(circle var(--r,0px) at var(--x,50%) var(--y,50%),#000 calc(100% - 28px),transparent 100%)}
+.layer-reveal .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(200,249,2,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(200,249,2,.12) 1px,transparent 1px);background-size:44px 44px}
+.hero h1{position:absolute;left:24px;right:24px;bottom:5vh;display:flex;justify-content:space-between;align-items:flex-end;font:900 clamp(64px,15vw,260px)/.78 var(--sans);letter-spacing:-.055em;text-transform:uppercase;pointer-events:none;mix-blend-mode:multiply}
+.hero h1 .ch{display:inline-block}
+.hero .line-mask{overflow:hidden;display:inline-block;padding-top:.16em;white-space:nowrap}
+.hero-meta{position:absolute;right:24px;top:84px;width:240px;font:500 13px/1.45 var(--sans);color:var(--ink-2)}
+.hero-meta b{color:var(--ink-dark)}
+.hint{position:absolute;left:24px;top:84px;font:500 12px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+
+/* ============ MOLDURA QUE ENCOLHE ============ */
+.shrink{position:relative;height:100vh;overflow:hidden;background:var(--bg-light)}
+.shrink .rows{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:1vh;white-space:nowrap}
+.shrink .row{font:900 clamp(60px,12vw,200px)/.9 var(--sans);text-transform:uppercase;letter-spacing:-.04em;color:var(--ink-light)}
+.shrink .row.serif{color:var(--accent)}
+.frame{position:absolute;inset:0;overflow:hidden;will-change:clip-path}
+.frame .pic{position:absolute;inset:0;background:radial-gradient(120% 90% at 30% 20%,#E9F7A8 0%,#9FB84A 30%,#36452A 62%,#14160F 100%)}
+.frame .pic svg{position:absolute;right:6%;bottom:-6%;width:62%;opacity:.9}
+.frame .cap{position:absolute;left:24px;bottom:22px;font:500 12px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:#fff}
+.sig{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.sig svg{width:min(70vw,820px)}
+.sig path{fill:none;stroke:var(--accent);stroke-width:14;stroke-linecap:round;stroke-linejoin:round}
+
+/* ============ MANIFESTO ============ */
+.manifesto{background:var(--bg-dark);color:var(--ink-light);padding:22vh 24px 18vh;text-align:center}
+.manifesto .kicker{font:500 12px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;opacity:.6;margin-bottom:36px}
+.manifesto p{font:900 clamp(38px,6.4vw,104px)/.98 var(--sans);text-transform:uppercase;letter-spacing:-.035em;max-width:1300px;margin:0 auto}
+.manifesto .serif{color:var(--accent);font-size:1.08em}
+.manifesto .w{display:inline-block}
+
+/* ============ GALERIA ESPALHADA ============ */
+.scatter{position:relative;height:260vh;background:var(--bg-dark);color:var(--ink-light)}
+.scatter .item{position:absolute;will-change:transform}
+.scatter .ph{border-radius:2px;overflow:hidden;position:relative}
+.scatter .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.35))}
+.scatter small{display:block;font:500 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;opacity:.7}
+.scatter .quote{font:400 clamp(18px,1.8vw,26px)/1.2 var(--serif);max-width:300px}
+.scatter .quote b{font-family:var(--sans);font-weight:800;font-style:normal}
+.hl{position:relative;display:inline-block}
+.hl::before{content:"";position:absolute;inset:-2px -4px;background:var(--accent);transform-origin:0 50%;transform:scaleX(var(--hl,0));z-index:-1}
+.hl.on{color:var(--accent-ink)}
+
+/* ============ DUPLA ON/OFF ============ */
+.pair{position:relative;min-height:100vh;background:var(--bg-light);display:grid;place-items:center;overflow:hidden;padding:12vh 24px}
+.pair .side{position:absolute;z-index:0;top:50%;width:min(26vw,360px);aspect-ratio:1;margin-top:calc(min(26vw,360px) / -2)}
+.pair .side.l{left:-7vw}.pair .side.r{right:-7vw}
+.pair .cols{display:grid;grid-template-columns:1fr 1fr;gap:6vw;position:relative;z-index:3;max-width:720px}
+.pair h3{font:900 clamp(44px,6vw,92px)/.86 var(--sans);text-transform:uppercase;letter-spacing:-.045em}
+.pair h3 .serif{display:block;font-size:1.05em}
+.pair p{font:500 14px/1.45 var(--sans);color:var(--ink-2);margin:16px 0;max-width:240px}
+.sq{width:42px;height:42px;border-radius:8px;background:var(--accent);display:grid;place-items:center;transition:transform .4s var(--ease)}
+.sq:hover{transform:rotate(-12deg) scale(1.08)}
+
+/* ============ ARQUIVO ============ */
+.archive{background:#0D0E0A;color:var(--ink-light);padding:16vh 24px}
+.archive header{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:8vh}
+.archive h2{font:900 clamp(40px,6vw,96px)/.86 var(--sans);text-transform:uppercase;letter-spacing:-.045em}
+.archive h2 .serif{display:block;color:var(--accent)}
+.archive header p{max-width:300px;font:500 14px/1.45 var(--sans);opacity:.7}
+.cols4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.cols4 .col:nth-child(2){margin-top:12vh}.cols4 .col:nth-child(3){margin-top:4vh}.cols4 .col:nth-child(4){margin-top:18vh}
+.card{position:relative;aspect-ratio:3/4;border:1px solid rgba(255,255,255,.14);border-radius:10px;margin-bottom:16px;overflow:hidden;display:grid;place-items:center;transition:border-color .4s var(--ease)}
+.card svg{width:62%;transition:opacity .45s var(--ease),transform .6s var(--ease)}
+.card .real{position:absolute;inset:0;opacity:0;transition:opacity .45s var(--ease)}
+.card .lbl{position:absolute;right:12px;bottom:10px;font:500 11px/1 var(--sans);letter-spacing:.04em}
+.card .lbl b{color:var(--accent);margin-left:6px}
+.card:hover{border-color:var(--accent)}.card:hover .real{opacity:1}.card:hover svg{transform:scale(1.06) rotate(-4deg)}
+
+/* ============ LEQUE ============ */
+.fan{position:relative;height:100vh;background:var(--bg-light);display:grid;place-items:center;overflow:hidden}
+.fan h2{position:absolute;top:12vh;text-align:center;font:900 clamp(40px,5.6vw,86px)/.86 var(--sans);text-transform:uppercase;letter-spacing:-.045em}
+.fan h2 .serif{display:block}
+.fan .deck{position:relative;width:min(22vw,260px);aspect-ratio:9/14;margin-top:10vh}
+.fan .c{position:absolute;inset:0;border-radius:22px;box-shadow:0 30px 60px -20px rgba(0,0,0,.35);overflow:hidden;display:flex;align-items:flex-end;padding:16px;color:#fff;font:800 15px/1.1 var(--sans);text-transform:uppercase}
+
+/* ============ RODAPÉ-PAINEL ============ */
+.foot-wrap{background:linear-gradient(180deg,var(--bg-light) 0%,var(--bg-light) 30%,var(--accent) 100%);padding:10vh 14px 14px}
+.foot{position:relative;background:var(--bg-dark);color:var(--ink-light);border-radius:28px;padding:16vh 24px 0;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(200,249,2,.35),0 0 80px rgba(200,249,2,.25)}
+.foot::before{content:"";position:absolute;left:50%;top:-1px;width:220px;height:26px;translate:-50% 0;background:var(--bg-light);border-radius:0 0 22px 22px}
+.foot h2{text-align:center;font:900 clamp(46px,8vw,140px)/.86 var(--sans);text-transform:uppercase;letter-spacing:-.05em}
+.foot h2 .serif{color:var(--accent)}
+.foot .links{display:flex;justify-content:space-between;gap:24px;margin:10vh 0 6vh;font:800 clamp(16px,1.6vw,22px)/1.15 var(--sans);text-transform:uppercase}
+.foot .links small{display:block;font:500 10px/1 var(--sans);opacity:.55;margin-bottom:10px;letter-spacing:.1em}
+.marq{border-top:1px solid rgba(255,255,255,.1);overflow:hidden;white-space:nowrap;padding:22px 0}
+.marq .t{display:inline-block;font:800 18px/1 var(--sans);letter-spacing:.02em;opacity:.55}
+.marq .t span{margin:0 28px}
+
+/* ============ RESPONSIVO ============ */
+@media (max-width:900px){
+  .hero-meta{display:none}
+  .hero h1{flex-direction:column;align-items:flex-start;font-size:20vw;bottom:9vh}
+  .scatter .item{width:auto}
+  .scatter .item[style*="width"]{min-width:38vw}
+  .cols4{grid-template-columns:1fr 1fr}.cols4 .col:nth-child(n){margin-top:0}
+  .pair .cols{grid-template-columns:1fr;gap:10vh;text-align:center}.pair p{margin-inline:auto}.sq{margin:0 auto}
+  .pair .side{opacity:.25}
+  .fan .deck{width:52vw}
+  .archive header{flex-direction:column;align-items:flex-start}
+  .foot .links{flex-direction:column;align-items:center;text-align:center}.foot .links>div{text-align:center!important}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body class="no-js">
+<script>document.body.classList.remove('no-js');if(matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('reduced')</script>
+
+<div class="demo-tag">Exemplo · marca e dados fictícios</div>
+<div class="loader" aria-hidden="true"><div class="brand">NÔMADE</div><div class="num">0</div><div class="bar"><i></i></div></div>
+<div class="progress" aria-hidden="true"></div>
+<div class="cursor" aria-hidden="true"><span>ver</span></div>
+
+<nav class="nav"><a href="#" class="logo">NÔ<br>MADE</a></nav>
+<a href="#fim" class="cta-fixed" data-cursor="ir">Reservar</a>
+
+<main>
+<!-- 1. HERÓI: revelação por máscara no cursor -->
+<section class="hero" id="hero">
+  <svg class="topo" viewBox="0 0 1200 800" preserveAspectRatio="none" aria-hidden="true"><g id="topo-g"></g></svg>
+  <div class="hint">Passe o cursor sobre a roda</div>
+  <div class="hero-meta"><b>Roda de 29" com motor no cubo.</b> 120 km de autonomia, 19 kg, quadro em alumínio reciclado. Desenhada para quem não escolhe entre cidade e trilha.</div>
+  <div class="hero-art" aria-hidden="true">
+    <svg viewBox="0 0 600 600"><defs><radialGradient id="tire" cx="50%" cy="45%"><stop offset="0" stop-color="#3a3f30"/><stop offset="1" stop-color="#14160F"/></radialGradient></defs>
+      <circle cx="300" cy="300" r="290" fill="url(#tire)"/><circle cx="300" cy="300" r="250" fill="#E4E3DC"/><circle cx="300" cy="300" r="236" fill="#2A2E22"/>
+      <g id="spokes" stroke="#C9C8C0" stroke-width="3"></g>
+      <circle cx="300" cy="300" r="78" fill="#14160F"/><circle cx="300" cy="300" r="46" fill="#C8F902"/><circle cx="300" cy="300" r="12" fill="#14160F"/>
+    </svg>
+  </div>
+  <div class="layer-reveal" aria-hidden="true"><div class="grid"></div>
+    <svg viewBox="0 0 600 600" style="width:min(78vh,86vw);position:relative"><g fill="none" stroke="#C8F902" stroke-width="2">
+      <circle cx="300" cy="300" r="290"/><circle cx="300" cy="300" r="250" stroke-dasharray="6 8"/><circle cx="300" cy="300" r="236"/><circle cx="300" cy="300" r="78"/><circle cx="300" cy="300" r="46"/>
+      <g id="spokes2"></g><path d="M300 10 V-40 M590 300 H640" /></g>
+      <g fill="#C8F902" font-family="Archivo" font-size="15" font-weight="800"><text x="318" y="168">MOTOR 750W</text><text x="420" y="470">ARO 29"</text><text x="98" y="128">PNEU 2.4</text></g>
+    </svg>
+  </div>
+  <h1 aria-label="Nômade"><span class="line-mask"><span class="split">NÔMADE</span></span><span class="line-mask"><span class="split">E-01</span></span></h1>
+</section>
+
+<!-- 2. MOLDURA QUE ENCOLHE + faixas de texto + assinatura -->
+<section class="shrink" id="shrink">
+  <div class="rows" aria-hidden="true">
+    <div class="row serif" data-dir="-1">pedale sem limite · pedale sem limite · pedale sem limite ·</div>
+    <div class="row" data-dir="1">120 KM DE AUTONOMIA · 120 KM DE AUTONOMIA · 120 KM ·</div>
+  </div>
+  <div class="frame"><div class="pic">
+      <svg viewBox="0 0 400 260" aria-hidden="true"><g fill="none" stroke="#14160F" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><circle cx="90" cy="180" r="70"/><circle cx="310" cy="180" r="70"/><path d="M90 180 L170 70 L280 70 L310 180 M170 70 L215 180 L90 180 M215 180 L280 70 M160 50 H200 M270 45 L290 70"/></g></svg>
+    </div><div class="cap">Serra Gaúcha · 2026</div></div>
+  <div class="sig" aria-hidden="true"><svg viewBox="0 0 800 300"><path d="M40 210 C120 60 180 40 200 120 S170 260 240 200 S330 40 360 120 S350 250 420 190 C470 150 480 90 520 110 S540 230 600 200 C650 175 690 120 760 90"/></svg></div>
+</section>
+
+<!-- 3. MANIFESTO -->
+<section class="manifesto">
+  <div class="kicker">Manifesto · NÔMADE</div>
+  <p class="words"><span class="serif">Feita</span> para subir serras, <span class="serif">cruzar</span> cidades e voltar para casa com bateria. <span class="serif">Sem</span> escolher entre o caminho e o destino.</p>
+</section>
+
+<!-- 4. GALERIA ESPALHADA (parallax por item) -->
+<section class="scatter" id="scatter">
+  <div class="item" data-speed="-.35" style="left:8%;top:6%;width:30vw"><small>Bento Gonçalves · 2026</small><div class="ph" style="aspect-ratio:4/5;background:linear-gradient(160deg,#C9D98A,#55673A 55%,#1C2214)"></div></div>
+  <div class="item" data-speed="-.1" style="left:58%;top:4%"><p class="quote">Não importa <b>onde</b> você começa — importa <span class="hl">como você avança</span>.</p></div>
+  <div class="item" data-speed="-.6" style="right:6%;top:16%;width:18vw"><small>Trilha do Rio · 2025</small><div class="ph" style="aspect-ratio:1;background:linear-gradient(200deg,#E8E2CF,#A49771 60%,#4D4532)"></div></div>
+  <div class="item" data-speed="-.2" style="left:40%;top:30%;width:22vw"><small>Porto Alegre · 2026</small><div class="ph" style="aspect-ratio:3/4;background:linear-gradient(180deg,#9AA3B5,#3D4556 60%,#14160F)"></div></div>
+  <div class="item" data-speed="-.45" style="left:4%;top:44%;width:16vw"><small>Oficina · 2026</small><div class="ph" style="aspect-ratio:1;filter:grayscale(1);background:linear-gradient(130deg,#ddd,#666)"></div></div>
+  <div class="item" data-speed="-.3" style="right:10%;top:50%;width:28vw"><small>Cambará do Sul · 2025</small><div class="ph" style="aspect-ratio:4/3;background:linear-gradient(170deg,#F4F3F1,#C8F902 40%,#4B5C1C)"></div></div>
+  <div class="item" data-speed="-.15" style="left:30%;top:66%"><p class="quote">Desde o primeiro protótipo, <b>cada quilo</b> que tiramos virou <span class="hl">quilômetro a mais</span>.</p></div>
+  <div class="item" data-speed="-.55" style="left:12%;top:78%;width:20vw"><small>Teste de chuva · 2026</small><div class="ph" style="aspect-ratio:3/4;background:linear-gradient(200deg,#B7C5C9,#3E5258)"></div></div>
+</section>
+
+<!-- 5. DUPLA FRENTE A FRENTE -->
+<section class="pair">
+  <svg class="side l" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="96" fill="#14160F"/><circle cx="100" cy="100" r="70" fill="none" stroke="#C8F902" stroke-width="10" stroke-dasharray="4 10"/><circle cx="100" cy="100" r="20" fill="#C8F902"/></svg>
+  <svg class="side r" viewBox="0 0 200 200" aria-hidden="true"><rect x="10" y="10" width="180" height="180" rx="40" fill="#C8F902"/><path d="M50 140 L90 70 L120 115 L135 95 L160 140Z" fill="#14160F"/></svg>
+  <div class="cols">
+    <div><h3><span class="serif">na</span>cidade</h3><p>Modo eco, farol automático e trava pelo celular. Estaciona em meio metro.</p><a class="sq" href="#" aria-label="Ver modo cidade" data-cursor="ir">↗</a></div>
+    <div><h3><span class="serif">na</span>trilha</h3><p>Torque de 85 Nm, suspensão de 120 mm e pneus 2.4 para terra e cascalho.</p><a class="sq" href="#" aria-label="Ver modo trilha" data-cursor="ir">↗</a></div>
+  </div>
+</section>
+
+<!-- 6. ARQUIVO -->
+<section class="archive">
+  <header><h2>Modelos<span class="serif">em linha</span></h2><p>Cada versão nasceu de um pedido de quem pedala. Passe o mouse para ver a cor real.</p></header>
+  <div class="cols4" id="cols4"></div>
+</section>
+
+<!-- 7. LEQUE FIXADO -->
+<section class="fan" id="fan">
+  <h2>quem pedala<span class="serif">conta</span></h2>
+  <div class="deck" id="deck"></div>
+</section>
+
+<!-- 8. RODAPÉ-PAINEL -->
+<div class="foot-wrap" id="fim">
+  <footer class="foot">
+    <h2>Sempre<span class="serif"> mais </span><br>longe.</h2>
+    <div class="links">
+      <div><small>Páginas</small>Início<br>Modelos<br>Test-ride<br>Oficinas</div>
+      <a class="sq" style="width:auto;height:auto;padding:16px 18px;align-self:center;color:var(--accent-ink);font-size:13px" href="#" data-cursor="ir">Agendar test-ride ↗</a>
+      <div style="text-align:right"><small>Siga</small>Instagram<br>YouTube<br>Strava</div>
+    </div>
+    <div class="marq"><div class="t" id="marq"><span>ARO 29</span><span>750 W</span><span>120 KM</span><span>19 KG</span><span>ALUMÍNIO RECICLADO</span><span>GARANTIA 5 ANOS</span></div></div>
+  </footer>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1/dist/lenis.min.js"></script>
+<script>
+(() => {
+/* ---------- conteúdo gerado ---------- */
+// linhas topográficas
+const g = document.getElementById('topo-g'); let d='';
+for (let i=0;i<22;i++){ const y=40+i*34; let p=`M-20 ${y}`; for(let x=0;x<=1240;x+=80){ p+=` Q ${x+40} ${y+Math.sin((x+i*90)/170)*38} ${x+80} ${y+Math.cos((x+i*50)/210)*26}` } d+=`<path d="${p}"/>` }
+g.innerHTML=d;
+// raios das rodas
+const sp=(id,c)=>{let s='';for(let i=0;i<32;i++){const a=i/32*Math.PI*2,b=a+.35;s+=`<line x1="${300+Math.cos(a)*50}" y1="${300+Math.sin(a)*50}" x2="${300+Math.cos(b)*234}" y2="${300+Math.sin(b)*234}"${c?` stroke="${c}"`:''}/>`}document.getElementById(id).innerHTML=s};
+sp('spokes');sp('spokes2');
+// cartões do arquivo
+const cols=document.getElementById('cols4'), models=[['Urbana','2026','#C8F902'],['Trilha','2026','#F26B1D'],['Carga','2025','#3BA3FF'],['Dobrável','2025','#E8E2CF'],['Infantil','2026','#FF5C8A'],['Estrada','2024','#9A7CFF'],['Clássica','2024','#E4E3DC'],['Pro','2026','#2FD08A']];
+for(let c=0;c<4;c++){const col=document.createElement('div');col.className='col';for(let r=0;r<2;r++){const m=models[c*2+r];col.insertAdjacentHTML('beforeend',`<a class="card" href="#" data-cursor="ver"><div class="real" style="background:radial-gradient(circle at 50% 40%,${m[2]}55,#0D0E0A 70%)"></div><svg viewBox="0 0 400 260"><g fill="none" stroke="${m[2]}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><circle cx="90" cy="180" r="66"/><circle cx="310" cy="180" r="66"/><path d="M90 180 L170 70 L280 70 L310 180 M170 70 L215 180 L90 180 M215 180 L280 70"/></g></svg><div class="lbl">${m[0]}<b>${m[1]}</b></div></a>`)}cols.appendChild(col)}
+// cartões do leque
+const deck=document.getElementById('deck'), cc=[['#2D3126','“Troquei o carro em 3 meses”'],['#7D8073','“Subo a serra sem suar”'],['#C8F902','“A bateria dura a semana”'],['#3BA3FF','“Levo os dois filhos”'],['#F26B1D','“Melhor compra do ano”'],['#14160F','“Silenciosa de verdade”'],['#9A7CFF','“Cabe no elevador”']];
+cc.forEach((c,i)=>deck.insertAdjacentHTML('beforeend',`<div class="c" style="background:linear-gradient(170deg,${c[0]},#14160F);z-index:${10-Math.abs(i-3)}">${c[1]}</div>`));
+// marquee duplicado
+const mq=document.getElementById('marq'); mq.innerHTML+=mq.innerHTML+mq.innerHTML;
+
+/* ---------- sem GSAP ou com movimento reduzido: tudo fica visível ---------- */
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (!window.gsap || reduced){ document.querySelector('.loader')?.remove(); return; }
+gsap.registerPlugin(ScrollTrigger);
+const fine = matchMedia('(hover:hover) and (pointer:fine)').matches;
+
+/* ---------- Lenis (só desktop) ---------- */
+let lenis=null;
+if (fine && window.Lenis){ lenis=new Lenis({lerp:.085,wheelMultiplier:1.1}); lenis.on('scroll',ScrollTrigger.update); gsap.ticker.add(t=>lenis.raf(t*1000)); gsap.ticker.lagSmoothing(0); }
+
+/* ---------- divisão de letras / palavras ---------- */
+document.querySelectorAll('.split').forEach(el=>{el.innerHTML=[...el.textContent].map(c=>`<span class="ch">${c===' '?'&nbsp;':c}</span>`).join('')});
+const wordsWrap=document.querySelector('.words');
+wordsWrap.querySelectorAll(':scope > span, :scope').forEach(()=>{});
+(function splitWords(node){[...node.childNodes].forEach(n=>{if(n.nodeType===3){const f=document.createDocumentFragment();n.textContent.split(/(\s+)/).forEach(t=>{if(!t)return;if(/^\s+$/.test(t)){f.append(t)}else{const s=document.createElement('span');s.className='w';s.textContent=t;f.append(s)}});n.replaceWith(f)}else if(n.nodeType===1&&!n.classList.contains('w')){if(n.classList.contains('serif')){n.classList.add('w')}else splitWords(n)}})})(wordsWrap);
+
+/* ---------- PRELOADER ---------- */
+lenis?.stop();
+const num=document.querySelector('.loader .num'), o={v:0};
+const intro=gsap.timeline();
+intro.to(o,{v:100,duration:1.6,ease:'power2.inOut',onUpdate:()=>num.textContent=Math.round(o.v)})
+     .to('.loader .bar i',{scaleX:1,duration:1.6,ease:'power2.inOut'},0)
+     .to('.loader',{clipPath:'inset(0 0 100% 0)',duration:.9,ease:'expo.inOut'},'+=.15')
+     .from('.hero h1 .ch',{yPercent:110,duration:1.1,ease:'expo.out',stagger:.035},'-=.45')
+     .from('.hero-art svg',{scale:.82,rotate:-40,opacity:0,duration:1.4,ease:'expo.out'},'<')
+     .from('.hero-meta,.hint,.nav,.cta-fixed',{opacity:0,y:14,duration:.8,stagger:.08},'<.3')
+     .add(()=>{document.querySelector('.loader')?.remove();lenis?.start()});
+
+/* ---------- CURSOR + máscara do herói ---------- */
+if (fine){
+  const cur=document.querySelector('.cursor'), cx=gsap.quickTo(cur,'x',{duration:.35,ease:'power3'}), cy=gsap.quickTo(cur,'y',{duration:.35,ease:'power3'});
+  addEventListener('pointermove',e=>{cx(e.clientX);cy(e.clientY)});
+  document.querySelectorAll('[data-cursor]').forEach(a=>{a.addEventListener('pointerenter',()=>{cur.classList.add('big');cur.querySelector('span').textContent=a.dataset.cursor});a.addEventListener('pointerleave',()=>cur.classList.remove('big'))});
+  const hero=document.getElementById('hero'), rev=document.querySelector('.layer-reveal'), m={x:innerWidth/2,y:innerHeight/2,r:0};
+  const mx=gsap.quickTo(m,'x',{duration:.6,ease:'power3'}), my=gsap.quickTo(m,'y',{duration:.6,ease:'power3'});
+  hero.addEventListener('pointermove',e=>{const b=hero.getBoundingClientRect();mx(e.clientX-b.left);my(e.clientY-b.top)});
+  hero.addEventListener('pointerenter',()=>gsap.to(m,{r:190,duration:.7,ease:'expo.out'}));
+  hero.addEventListener('pointerleave',()=>gsap.to(m,{r:0,duration:.6,ease:'power3.in'}));
+  gsap.ticker.add(t=>{const wob=m.r?Math.sin(t*3.1)*10+Math.cos(t*4.7)*6:0;rev.style.setProperty('--x',m.x+'px');rev.style.setProperty('--y',m.y+'px');rev.style.setProperty('--r',Math.max(0,m.r+wob)+'px')});
+}
+gsap.to('.hero-art svg, .layer-reveal svg',{rotate:120,ease:'none',scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:true}});
+gsap.to('.topo',{yPercent:12,ease:'none',scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:true}});
+
+/* ---------- barra de progresso ---------- */
+gsap.to('.progress',{scaleX:1,ease:'none',scrollTrigger:{start:0,end:'max',scrub:.3}});
+
+/* ---------- MOLDURA QUE ENCOLHE ---------- */
+const sh=gsap.timeline({scrollTrigger:{trigger:'#shrink',start:'top top',end:'+=220%',scrub:1,pin:true}});
+sh.fromTo('.frame',{clipPath:'inset(0% 0% 0% 0% round 0px)'},{clipPath:'inset(24% 31% 24% 31% round 6px)',ease:'power2.inOut',duration:1})
+  .to('#shrink',{backgroundColor:getComputedStyle(document.documentElement).getPropertyValue('--bg-dark'),duration:.6},0.15)
+  .fromTo('.frame .pic',{scale:1.25},{scale:1,duration:1},0)
+  .fromTo('.row[data-dir="-1"]',{xPercent:0},{xPercent:-35,ease:'none',duration:1.6},0)
+  .fromTo('.row[data-dir="1"]',{xPercent:-35},{xPercent:0,ease:'none',duration:1.6},0)
+  .fromTo('.sig path',{strokeDashoffset:()=>document.querySelector('.sig path').getTotalLength(),strokeDasharray:()=>document.querySelector('.sig path').getTotalLength()},{strokeDashoffset:0,ease:'none',duration:.6},1);
+
+/* ---------- MANIFESTO: palavras acendem ---------- */
+gsap.fromTo('.words .w',{opacity:.16},{opacity:1,stagger:.08,ease:'none',scrollTrigger:{trigger:'.manifesto',start:'top 70%',end:'bottom 70%',scrub:true}});
+
+/* ---------- GALERIA: velocidade por item + fundo clareando ---------- */
+document.querySelectorAll('.scatter .item').forEach(el=>{gsap.to(el,{y:()=>parseFloat(el.dataset.speed)*innerHeight,ease:'none',scrollTrigger:{trigger:'#scatter',start:'top bottom',end:'bottom top',scrub:true}})});
+gsap.timeline({scrollTrigger:{trigger:'#scatter',start:'top 30%',end:'bottom 60%',scrub:true}}).to('#scatter',{backgroundColor:'#7D8073'}).to('#scatter',{backgroundColor:'#D9D8D0',color:'#14160F'});
+document.querySelectorAll('.hl').forEach(h=>ScrollTrigger.create({trigger:h,start:'top 75%',once:true,onEnter:()=>{gsap.to(h,{'--hl':1,duration:.7,ease:'expo.inOut',onComplete:()=>h.classList.add('on')})}}));
+
+/* ---------- DUPLA: lados entram ---------- */
+gsap.from('.pair .side.l',{xPercent:-60,rotate:-30,scrollTrigger:{trigger:'.pair',start:'top 80%',end:'center center',scrub:1}});
+gsap.from('.pair .side.r',{xPercent:60,rotate:30,scrollTrigger:{trigger:'.pair',start:'top 80%',end:'center center',scrub:1}});
+gsap.from('.pair h3,.pair p,.pair .sq',{y:40,opacity:0,stagger:.06,duration:.9,ease:'expo.out',scrollTrigger:{trigger:'.pair .cols',start:'top 80%'}});
+
+/* ---------- ARQUIVO: colunas em velocidades diferentes ---------- */
+document.querySelectorAll('.cols4 .col').forEach((c,i)=>gsap.to(c,{y:[-40,-140,-80,-200][i],ease:'none',scrollTrigger:{trigger:'.archive',start:'top bottom',end:'bottom top',scrub:true}}));
+gsap.from('.card',{y:60,opacity:0,stagger:.05,duration:.9,ease:'expo.out',scrollTrigger:{trigger:'#cols4',start:'top 85%'}});
+
+/* ---------- LEQUE FIXADO ---------- */
+const cards=gsap.utils.toArray('#deck .c');
+const ft=gsap.timeline({scrollTrigger:{trigger:'#fan',start:'top top',end:'+=150%',scrub:1,pin:true}});
+cards.forEach((c,i)=>{const k=i-3;ft.fromTo(c,{x:0,rotate:0,y:0},{x:()=>k*Math.min(innerWidth*.11,170),rotate:k*7,y:Math.abs(k)*22,ease:'power2.out'},0)});
+
+/* ---------- RODAPÉ + marquee ---------- */
+gsap.from('.foot h2',{yPercent:30,opacity:0,duration:1.1,ease:'expo.out',scrollTrigger:{trigger:'.foot',start:'top 75%'}});
+const mqt=gsap.to('#marq',{xPercent:-33.33,ease:'none',duration:18,repeat:-1});
+ScrollTrigger.create({onUpdate:s=>gsap.to(mqt,{timeScale:1+Math.min(Math.abs(s.getVelocity())/400,4),duration:.2,overwrite:true,onComplete:()=>gsap.to(mqt,{timeScale:1,duration:.8})})});
+
+addEventListener('load',()=>ScrollTrigger.refresh());
+})();
+</script>
+</body>
+</html>
